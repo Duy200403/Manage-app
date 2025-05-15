@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
 import { CalendarIcon, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -31,11 +30,11 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 
-interface Employee {
-  id: string;
-  name: string;
-}
-
+import { Employee } from "@/lib/types/employee/employee";
+import { fetchEmployees } from "@/lib/api/employee/employeeService";
+import { createShift } from "@/lib/api/schedule/createScheduleService";
+import { createFormatDate } from "@/lib/utils/schedule/format";
+import { CreateShiftPayload } from "@/lib/types/schedule/createSchedule";
 export default function NewSchedulePage() {
   const router = useRouter();
 
@@ -49,17 +48,12 @@ export default function NewSchedulePage() {
   );
 
   useEffect(() => {
-    fetch("http://localhost:5281/api/Employee?includeShifts=false")
-      .then((res) => res.json())
-      .then((data) => {
-        // Kiểm tra dữ liệu và lấy mảng từ `$values`
-        if (Array.isArray(data?.$values)) {
-          setEmployees(data.$values); // Lấy dữ liệu từ thuộc tính `$values`
-        } else {
-          console.error("Dữ liệu nhân viên không hợp lệ:", data);
-        }
-      })
-      .catch((err) => console.error("Error fetching employees:", err));
+    fetchEmployees()
+      .then(setEmployees)
+      .catch((err) => {
+        console.error(err);
+        toast.error("Lỗi khi tải danh sách nhân viên");
+      });
   }, []);
 
   const availableEmployees = employees.filter(
@@ -70,7 +64,7 @@ export default function NewSchedulePage() {
     const emp = employees.find((e) => e.id === id);
     if (emp && !selectedEmployees.some((e) => e.id === emp.id)) {
       setSelectedEmployees([...selectedEmployees, emp]);
-      setEmployeeInput(""); // Reset input sau khi thêm nhân viên
+      setEmployeeInput("");
     }
   };
 
@@ -86,32 +80,23 @@ export default function NewSchedulePage() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    const payload = {
-      employeeId: selectedEmployees.map((e) => e.id), // Lấy danh sách employeeId
-      shiftDate: date?.toISOString(), // Chuyển đổi ngày thành chuỗi ISO
-      startTime: shiftType === "morning" ? "08:00:00" : "13:30:00", // Gán thời gian bắt đầu tùy theo ca
-      endTime: shiftType === "morning" ? "12:00:00" : "17:30:00", // Gán thời gian kết thúc tùy theo ca
+    const payload: CreateShiftPayload = {
+      employeeId: selectedEmployees.map((e) => e.id),
+      shiftDate: date?.toISOString(),
+      startTime: shiftType === "morning" ? "08:00:00" : "13:30:00",
+      endTime: shiftType === "morning" ? "12:00:00" : "17:30:00",
       createdDate: new Date().toISOString(),
-      createdBy: "admin", // Bạn có thể thay đổi giá trị này nếu cần
+      createdBy: "admin",
       updatedDate: new Date().toISOString(),
-      updatedBy: "admin", // Bạn có thể thay đổi giá trị này nếu cần
+      updatedBy: "admin",
     };
 
     try {
-      const response = await fetch("http://localhost:5281/api/Shift", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) throw new Error("Lỗi khi tạo ca trực");
+      await createShift(payload);
       toast.success("Đã tạo ca trực");
       router.push("/schedule");
     } catch (error) {
-      console.log(payload);
-      console.error("Error creating shift:", error);
+      console.error(error);
       toast.error("Lỗi khi tạo ca trực");
     } finally {
       setIsSubmitting(false);
@@ -131,6 +116,7 @@ export default function NewSchedulePage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* ... phần UI giữ nguyên như cũ, dùng formatDate thay cho format */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="space-y-2">
                 <Label>Ngày trực</Label>
@@ -141,11 +127,7 @@ export default function NewSchedulePage() {
                       className="w-full justify-start text-left font-normal"
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date ? (
-                        format(date, "dd/MM/yyyy")
-                      ) : (
-                        <span>Chọn ngày</span>
-                      )}
+                      {date ? createFormatDate(date) : <span>Chọn ngày</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-2" align="start">

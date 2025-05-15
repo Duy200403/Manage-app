@@ -1,7 +1,6 @@
 "use client";
 
-import * as React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
@@ -24,7 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -32,13 +30,15 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { createEmployee } from "@/lib/api/employee/createEmployeeService";
+import { CreateEmployee } from "@/lib/types/employee/createEmployee";
 
 export default function NewEmployeePage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [startDate, setStartDate] = useState<Date | undefined>();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CreateEmployee>({
     name: "",
     status: "Đang làm việc",
     createdDate: "",
@@ -46,12 +46,6 @@ export default function NewEmployeePage() {
     updatedDate: "",
     updatedBy: "admin",
   });
-
-  const getInitials = (name: string) =>
-    name
-      .split(" ")
-      .map((n) => n[0])
-      .join("");
 
   const handleDateChange = (date: Date | undefined) => {
     setStartDate(date);
@@ -65,24 +59,13 @@ export default function NewEmployeePage() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    const dataToSubmit = {
+    const dataToSubmit: CreateEmployee = {
       ...formData,
       updatedDate: new Date().toISOString(),
     };
 
     try {
-      const response = await fetch("http://localhost:5281/api/Employee", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(dataToSubmit),
-      });
-      console.log(dataToSubmit);
-      if (!response.ok) {
-        throw new Error("Lỗi khi gửi dữ liệu");
-      }
-
+      await createEmployee(dataToSubmit);
       router.push("/employees");
     } catch (err) {
       alert("Đã xảy ra lỗi khi gửi dữ liệu.");
@@ -103,19 +86,8 @@ export default function NewEmployeePage() {
               Nhập thông tin chi tiết về nhân viên mới
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            {/* <div className="flex flex-col items-center gap-4 sm:flex-row">
-              <Avatar className="h-24 w-24">
-                <AvatarImage
-                  src={`/placeholder.svg?height=96&width=96`}
-                  alt="Avatar"
-                />
-                <AvatarFallback>
-                  {formData.name ? getInitials(formData.name) : "NV"}
-                </AvatarFallback>
-              </Avatar>
-            </div> */}
 
+          <CardContent className="space-y-6">
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">Họ và tên</Label>
@@ -178,6 +150,7 @@ export default function NewEmployeePage() {
               </div>
             </div>
           </CardContent>
+
           <CardFooter className="flex justify-between">
             <Button
               type="button"

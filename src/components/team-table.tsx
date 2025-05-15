@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -19,42 +20,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { MoreHorizontal, Search, Edit, Trash2, Eye, Users } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Search, MoreHorizontal, Edit, Trash2, Eye, Users } from "lucide-react";
 
-interface DevelopmentTeam {
-  id: string;
-  softwareId: string;
-  memberName: string;
-  status: string;
-  createdDate: string;
-  createdBy: string;
-  updatedDate: string;
-  updatedBy: string;
-  software: {
-    name: string;
-    startDate: string;
-    endDate: string;
-    scope: string;
-    leader: string;
-    status: string;
-  };
-}
+import { DevelopmentTeam } from "@/lib/types/team/team";
+import { fetchDevelopmentTeams } from "@/lib/api/team/teamService";
+import { formatDate } from "@/lib/utils/team/formatDateTeam";
 
 export function TeamTable() {
-  const [searchTerm, setSearchTerm] = useState("");
   const [teams, setTeams] = useState<DevelopmentTeam[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    fetch("http://localhost:5281/api/DevelopmentTeam?includeSoftware=true")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data?.$values) {
-          setTeams(data.$values);
-        }
-      })
-      .catch((err) => console.error("Error fetching teams:", err));
+    fetchDevelopmentTeams().then(setTeams);
   }, []);
 
   const filteredTeams = teams.filter(
@@ -103,7 +81,7 @@ export function TeamTable() {
                       <AvatarFallback>
                         {team.memberName
                           .split(" ")
-                          .map((n) => n[0])
+                          .map((word) => word[0])
                           .join("")}
                       </AvatarFallback>
                     </Avatar>
@@ -118,15 +96,12 @@ export function TeamTable() {
                     {team.status}
                   </Badge>
                 </TableCell>
-                <TableCell>
-                  {new Date(team.createdDate).toLocaleDateString()}
-                </TableCell>
+                <TableCell>{formatDate(team.createdDate)}</TableCell>
                 <TableCell>{team.createdBy}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Mở menu</span>
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>

@@ -1,6 +1,9 @@
 "use client";
 
-import type React from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,11 +16,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-interface DatePickerProps {
-  selected: Date | undefined;
-  onChange: (date: Date | undefined) => void;
-}
 import {
   Select,
   SelectContent,
@@ -25,26 +23,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
 
-import { Calendar } from "@/components/ui/calendar"; // component lịch gốc
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-
+import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { create } from "domain";
-export function DatePicker({ selected, onChange }: DatePickerProps) {
+import { createSoftware } from "@/lib/api/software/createSoftwareService";
+import { CreateSoftware } from "@/lib/types/software/createSoftware";
+
+// Component chọn ngày
+function DatePicker({
+  selected,
+  onChange,
+}: {
+  selected: Date | undefined;
+  onChange: (date: Date | undefined) => void;
+}) {
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button
-          variant={"outline"}
+          variant="outline"
           className={cn(
             "w-full justify-start text-left font-normal",
             !selected && "text-muted-foreground"
@@ -65,11 +67,12 @@ export function DatePicker({ selected, onChange }: DatePickerProps) {
     </Popover>
   );
 }
+
 export default function NewSoftwarePage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CreateSoftware>({
     name: "",
     scope: "",
     startDate: "",
@@ -87,18 +90,7 @@ export default function NewSoftwarePage() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("http://localhost:5281/api/Software", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        throw new Error("Lỗi khi gửi dữ liệu");
-      }
-
+      await createSoftware(formData);
       router.push("/software");
     } catch (err) {
       alert("Đã xảy ra lỗi khi gửi dữ liệu.");
@@ -163,7 +155,7 @@ export default function NewSoftwarePage() {
                       ? new Date(formData.startDate)
                       : undefined
                   }
-                  onChange={(date: Date | undefined) =>
+                  onChange={(date) =>
                     setFormData({
                       ...formData,
                       startDate: date?.toISOString() || "",
@@ -230,19 +222,6 @@ export default function NewSoftwarePage() {
                 </Select>
               </div>
             </div>
-
-            {/* <div className="space-y-2">
-              <Label htmlFor="description">Mô tả phần mềm</Label>
-              <Textarea
-                id="description"
-                placeholder="Nhập mô tả chi tiết về phần mềm"
-                className="min-h-[120px]"
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-              />
-            </div> */}
           </CardContent>
 
           <CardFooter className="flex justify-between">

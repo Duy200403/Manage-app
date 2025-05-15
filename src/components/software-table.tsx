@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -21,72 +21,31 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { MoreHorizontal, Search, Edit, Trash2, Eye } from "lucide-react";
+import {
+  formatDate,
+  translateStatus,
+} from "@/lib/utils/software/formatDateSoftware";
+import { getAllSoftware } from "@/lib/api/software/softwareService";
+import { Software } from "@/lib/types/software/software";
 
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return "Không xác định";
-
-  const day = date.getDate().toString().padStart(2, "0");
-  const month = (date.getMonth() + 1).toString().padStart(2, "0");
-  const year = date.getFullYear();
-
-  return `Ngày ${day} tháng ${month}, năm ${year}`;
-}
-function translateStatus(status: string): string {
-  switch (status) {
-    case "Completed":
-      return "Hoàn thành";
-    case "InProgress":
-      return "Đang phát triển";
-    default:
-      return status;
-  }
-}
-
-type Software = {
-  id: number;
-  name: string;
-  startDate: string;
-  endDate: string;
-  scope: string;
-  leader: string;
-  status: string;
-};
 export function SoftwareTable() {
   const [softwareData, setSoftwareData] = useState<Software[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null); // Cho phép error là chuỗi hoặc null
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("http://localhost:5281/api/Software?includeDevelopmentTeams=false")
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error("Lỗi khi gọi API: " + res.status);
-        }
-        return res.json();
-      })
-      .then((data) => {
-        // Kiểm tra xem data có chứa $values và đảm bảo đó là mảng
-        if (data && Array.isArray(data["$values"])) {
-          setSoftwareData(data["$values"]); // Truy xuất đúng mảng $values
-        } else {
-          setError("Dữ liệu trả về không hợp lệ.");
-          setSoftwareData([]); // Đảm bảo là mảng rỗng khi có lỗi
-        }
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
-      });
+    getAllSoftware()
+      .then(setSoftwareData)
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
   }, []);
 
-  const filteredSoftware = softwareData.filter(
-    (software) =>
-      software.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      software.leader?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      software.status?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filtered = softwareData.filter(
+    (s) =>
+      s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.leader.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.status.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) return <p>Đang tải dữ liệu...</p>;
@@ -106,7 +65,6 @@ export function SoftwareTable() {
           />
         </div>
       </div>
-
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -121,35 +79,30 @@ export function SoftwareTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredSoftware.map((software, index) => (
-              <TableRow key={software.id || index}>
-                <TableCell className="font-medium">{software.name}</TableCell>
-                <TableCell>{formatDate(software.startDate)}</TableCell>
-                <TableCell>{formatDate(software.endDate)}</TableCell>
-                <TableCell>{software.scope}</TableCell>
-                <TableCell>{software.leader}</TableCell>
+            {filtered.map((s) => (
+              <TableRow key={s.id}>
+                <TableCell>{s.name}</TableCell>
+                <TableCell>{formatDate(s.startDate)}</TableCell>
+                <TableCell>{formatDate(s.endDate)}</TableCell>
+                <TableCell>{s.scope}</TableCell>
+                <TableCell>{s.leader}</TableCell>
                 <TableCell>
                   <Badge
                     variant={
-                      software.status === "Hoàn thành"
+                      s.status === "Hoàn thành"
                         ? "destructive"
-                        : software.status === "Đang phát triển"
+                        : s.status === "Đang phát triển"
                         ? "secondary"
-                        : software.status === "Lên kế hoạch"
-                        ? "default"
-                        : software.status === "Đang thử nghiệm"
-                        ? "default"
-                        : "outline"
+                        : "default"
                     }
                   >
-                    {translateStatus(software.status)}
+                    {translateStatus(s.status)}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Mở menu</span>
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>

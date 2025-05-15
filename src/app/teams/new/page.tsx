@@ -2,95 +2,72 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { set } from "date-fns";
 
-type Software = {
-  id: string;
-  name: string;
-};
+import { Software, CreateTeam } from "@/lib/types/team/createTeam";
+import {
+  fetchSoftwareList,
+  createTeam,
+} from "@/lib/api/team/createTeamService";
+
+const AVAILABLE_MEMBERS = [
+  "Nguyễn Văn A",
+  "Trần Thị B",
+  "Lê Văn C",
+  "Phạm Thị D",
+  "Hoàng Văn E",
+  "Vũ Văn F",
+  "Đặng Thị G",
+  "Bùi Văn H",
+  "Ngô Thị I",
+  "Đinh Văn K",
+];
 
 export default function NewTeamPage() {
   const router = useRouter();
   const [softwareList, setSoftwareList] = useState<Software[]>([]);
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CreateTeam>({
     softwareId: "",
     status: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const availableMembers = [
-    "Nguyễn Văn A",
-    "Trần Thị B",
-    "Lê Văn C",
-    "Phạm Thị D",
-    "Hoàng Văn E",
-    "Vũ Văn F",
-    "Đặng Thị G",
-    "Bùi Văn H",
-    "Ngô Thị I",
-    "Đinh Văn K",
-  ].filter((m) => !selectedMembers.includes(m));
-
   useEffect(() => {
-    fetch("http://localhost:5281/api/Software?includeDevelopmentTeams=false")
-      .then((res) => res.json())
-      .then((data) => {
-        const list = data.$values || [];
-        console.log("📃 Danh sách phần mềm:", list);
-        setSoftwareList(data.$values || []);
-      })
+    fetchSoftwareList()
+      .then(setSoftwareList)
       .catch((error) => {
-        console.error("Lỗi khi lấy danh sách phần mềm:", error);
+        console.error(error);
         setErrorMessage(
           "Không thể tải danh sách phần mềm. Vui lòng thử lại sau."
         );
       });
   }, []);
 
+  const availableMembers = AVAILABLE_MEMBERS.filter(
+    (m) => !selectedMembers.includes(m)
+  );
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    // Kiem tra xem nguoi dung chon it nhat mot thanh vien
+    setErrorMessage("");
+
     if (selectedMembers.length === 0) {
       setErrorMessage("Vui lòng chọn ít nhất một thành viên.");
-      setIsSubmitting(false);
       return;
     }
-    // Kiem tra xem nguoi dung nhap day du thong tin
+
     if (!formData.softwareId || !formData.status) {
       setErrorMessage("Vui lòng điền đầy đủ thông tin.");
-      setIsSubmitting(false);
       return;
     }
-    const now = new Date().toISOString();
 
+    setIsSubmitting(true);
     try {
-      const res = await fetch("http://localhost:5281/api/DevelopmentTeam", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          softwareId: formData.softwareId,
-          memberName: selectedMembers.join(", "),
-          status: formData.status,
-          createdDate: now,
-          createdBy: "admin",
-          updatedDate: now,
-          updatedBy: "admin",
-        }),
-      });
-
-      if (res.ok) {
-        setErrorMessage("✅ Tạo nhóm thành công!");
-        router.push("/teams");
-      } else {
-        const errorText = await res.text();
-        setErrorMessage("❌ Lỗi: " + errorText);
-      }
-    } catch (error) {
-      console.error("Lỗi gửi dữ liệu:", error);
-      setErrorMessage("❌ Lỗi kết nối máy chủ");
+      await createTeam(formData, selectedMembers);
+      router.push("/teams");
+    } catch (error: any) {
+      setErrorMessage("❌ Lỗi: " + error.message);
     } finally {
       setIsSubmitting(false);
     }

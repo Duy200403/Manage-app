@@ -1,9 +1,17 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { ScheduleDisplay } from "@/lib/types/schedule/schedule";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,83 +19,26 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { MoreHorizontal, Search, Edit, Trash2, Calendar } from "lucide-react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { MoreHorizontal, Search, Edit, Trash2, Calendar } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-const scheduleData = [
-  {
-    id: "S001",
-    date: "01/05/2023",
-    shift: "Sáng",
-    time: "8:00 - 12:00",
-    employees: [
-      { name: "Nguyễn Văn A", initials: "NVA" },
-      { name: "Trần Thị B", initials: "TTB" },
-    ],
-  },
-  {
-    id: "S002",
-    date: "01/05/2023",
-    shift: "Chiều",
-    time: "13:30 - 17:30",
-    employees: [
-      { name: "Lê Văn C", initials: "LVC" },
-      { name: "Phạm Thị D", initials: "PTD" },
-    ],
-  },
-  {
-    id: "S003",
-    date: "02/05/2023",
-    shift: "Sáng",
-    time: "8:00 - 12:00",
-    employees: [
-      { name: "Hoàng Văn E", initials: "HVE" },
-      { name: "Vũ Văn F", initials: "VVF" },
-    ],
-  },
-  {
-    id: "S004",
-    date: "02/05/2023",
-    shift: "Chiều",
-    time: "13:30 - 17:30",
-    employees: [
-      { name: "Đặng Thị G", initials: "DTG" },
-      { name: "Bùi Văn H", initials: "BVH" },
-    ],
-  },
-  {
-    id: "S005",
-    date: "03/05/2023",
-    shift: "Sáng",
-    time: "8:00 - 12:00",
-    employees: [
-      { name: "Ngô Thị I", initials: "NTI" },
-      { name: "Đinh Văn K", initials: "DVK" },
-    ],
-  },
-  {
-    id: "S006",
-    date: "03/05/2023",
-    shift: "Chiều",
-    time: "13:30 - 17:30",
-    employees: [
-      { name: "Nguyễn Văn A", initials: "NVA" },
-      { name: "Lê Văn C", initials: "LVC" },
-    ],
-  },
-]
+interface Props {
+  schedules: ScheduleDisplay[];
+}
 
-export function ScheduleTable() {
-  const [searchTerm, setSearchTerm] = useState("")
+export function ScheduleTable({ schedules }: Props) {
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredSchedules = scheduleData.filter(
+  const filteredSchedules = schedules.filter(
     (schedule) =>
       schedule.date.includes(searchTerm) ||
       schedule.shift.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      schedule.employees.some((employee) => employee.name.toLowerCase().includes(searchTerm.toLowerCase())),
-  )
+      schedule.employees.some((employee) =>
+        employee.name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+  );
 
   return (
     <div className="space-y-4">
@@ -116,18 +67,30 @@ export function ScheduleTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredSchedules.map((schedule) => (
-              <TableRow key={schedule.id}>
+            {filteredSchedules.map((schedule, index) => (
+              <TableRow key={`${schedule.id}-${index}`}>
                 <TableCell>{schedule.date}</TableCell>
                 <TableCell>
-                  <Badge variant={schedule.shift === "Sáng" ? "default" : "secondary"}>{schedule.shift}</Badge>
+                  <Badge
+                    variant={
+                      schedule.shift === "Sáng" ? "default" : "secondary"
+                    }
+                  >
+                    {schedule.shift}
+                  </Badge>
                 </TableCell>
                 <TableCell>{schedule.time}</TableCell>
                 <TableCell>
-                  <div className="flex -space-x-2">
+                  <div className="flex space-x-2">
                     {schedule.employees.map((employee, index) => (
-                      <Avatar key={index} className="h-8 w-8 border-2 border-background">
-                        <AvatarImage src={`/placeholder.svg?height=32&width=32`} alt={employee.name} />
+                      <Avatar
+                        key={`${employee.id}-${index}`} // key duy nhất theo ca trực
+                        className="h-8 w-8 border-2 border-background"
+                      >
+                        <AvatarImage
+                          src="/placeholder.svg"
+                          alt={employee.name}
+                        />
                         <AvatarFallback>{employee.initials}</AvatarFallback>
                       </Avatar>
                     ))}
@@ -165,5 +128,5 @@ export function ScheduleTable() {
         </Table>
       </div>
     </div>
-  )
+  );
 }

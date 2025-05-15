@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Employee } from "@/lib/types/employee/employee";
+import { fetchEmployees } from "@/lib/api/employee/employeeService";
+import { formatDate } from "@/lib/utils/employee/formatDate";
+
 import {
   Table,
   TableBody,
@@ -28,47 +32,19 @@ import {
   Edit,
   Trash2,
 } from "lucide-react";
-import { format } from "path";
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return "Không xác định";
-
-  const day = date.getDate().toString().padStart(2, "0");
-  const month = (date.getMonth() + 1).toString().padStart(2, "0");
-  const year = date.getFullYear();
-
-  return `Ngày ${day} tháng ${month}, năm ${year}`;
-}
-type Employee = {
-  id: number;
-  name: string;
-  status: string;
-  createdDate: string;
-  createdBy: string;
-  updatedDate: string;
-  updatedBy: string;
-};
+import { useRouter } from "next/navigation";
 
 export function EmployeeTable() {
   const [searchTerm, setSearchTerm] = useState("");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null); // Cho phép error là chuỗi hoặc null
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
   useEffect(() => {
-    fetch("http://localhost:5281/api/Employee?includeShifts=false")
-      .then((res) => res.json())
-      .then((data) => {
-        // Kiểm tra xem data có chứa $values và đảm bảo đó là mảng
-        if (data && Array.isArray(data["$values"])) {
-          console.log(data["$values"]);
-          setEmployees(data["$values"]); // Truy xuất đúng mảng $values
-        } else {
-          setError("Dữ liệu trả về không hợp lệ.");
-          setEmployees([]); // Đảm bảo là mảng rỗng khi có lỗi
-        }
-        setLoading(false);
-      })
-      .catch((error) => console.error("Lỗi khi fetch dữ liệu:", error));
+    fetchEmployees()
+      .then((data) => setEmployees(data))
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
   }, []);
 
   const filteredEmployees = employees.filter(
@@ -77,9 +53,13 @@ export function EmployeeTable() {
       employee.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.createdBy.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
   if (loading) return <p>Đang tải dữ liệu...</p>;
   if (error) return <p className="text-red-500">Lỗi: {error}</p>;
-
+  // Hàm xử lý click chỉnh sửa
+  const handleEdit = (id: string) => {
+    router.push(`/employee/update/${id}`); // chuyển sang trang chi tiết employee theo id
+  };
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
@@ -142,7 +122,8 @@ export function EmployeeTable() {
                         <Calendar className="mr-2 h-4 w-4" />
                         Xem lịch trực
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      {/* Thêm onClick cho chỉnh sửa */}
+                      <DropdownMenuItem onClick={() => handleEdit(employee.id)}>
                         <Edit className="mr-2 h-4 w-4" />
                         Chỉnh sửa
                       </DropdownMenuItem>

@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button"
-import { PlusCircle } from "lucide-react"
-import { TeamTable } from "@/components/team-table"
-import Link from "next/link"
+import { Button } from "@/components/ui/button";
+import { PlusCircle } from "lucide-react";
+import { TeamTable } from "@/components/team-table";
+import Link from "next/link";
 
 export default function TeamsPage() {
   return (
@@ -18,5 +18,5 @@ export default function TeamsPage() {
 
       <TeamTable />
     </div>
-  )
+  );
 }
